@@ -605,7 +605,8 @@ define(function (require, exports, module) {
       var self = this;
 
       if (window.console && console.error) {
-        console.error(String(error));
+        var errorMessage = error.errorModule ? error.errorModule.toInterpolatedMessage(error) : String(error);
+        console.error(errorMessage);
       }
 
       if (! self._sentryMetrics) {

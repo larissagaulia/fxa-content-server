@@ -552,7 +552,8 @@ define(function (require, exports, module) {
       err.logged = true;
 
       if (typeof console !== 'undefined' && console) {
-        console.error(err.message || err);
+        var errorMessage = err.errorModule ? err.errorModule.toInterpolatedMessage(err) : (err.message || err);
+        console.error(errorMessage);
       }
       this.sentryMetrics.captureException(err);
       this.metrics.logError(err);
