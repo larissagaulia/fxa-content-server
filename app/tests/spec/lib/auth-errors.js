@@ -8,6 +8,7 @@ define(function (require, exports, module) {
   'use strict';
 
   var AuthErrors = require('lib/auth-errors');
+  var Constants = require('lib/constants');
   var MarketingEmailErrors = require('lib/marketing-email-errors');
   var chai = require('chai');
 
@@ -15,20 +16,39 @@ define(function (require, exports, module) {
 
   describe('lib/auth-errors', function () {
     describe('toError', function () {
-      it('converts a string to an Error object with expected fields', function () {
-        var err = AuthErrors.toError('INVALID_TOKEN');
-        assert.isTrue(err instanceof Error);
+      var err;
 
+      before(function () {
+        err = AuthErrors.toError('INVALID_TOKEN', 'the context');
+      });
+
+      it('converts a string to an Error object', function () {
+        assert.instanceOf(err, Error);
+      });
+
+      it('expected fields are available', function () {
         assert.equal(err.errno, 110);
+        assert.ok(err.errorModule);
         assert.equal(err.namespace, 'auth');
+        assert.equal(err.errorPageBaseUrl, Constants.INTERNAL_ERROR_PAGE);
         assert.equal(err.message, AuthErrors.toMessage('INVALID_TOKEN'));
+        assert.equal(err.namespace, AuthErrors.NAMESPACE);
       });
 
       it('sets `context` field of error if given', function () {
-        var err = AuthErrors.toError('INVALID_TOKEN', 'the context');
-        assert.isTrue(err instanceof Error);
-
         assert.equal(err.context, 'the context');
+      });
+
+      describe('getErrorPageUrl', function () {
+        var errPageUrl;
+
+        before(function () {
+          errPageUrl = err.getErrorPageUrl();
+        });
+
+        it('sends users to the 500 page by default', function () {
+          assert.include(errPageUrl, '500.html');
+        });
       });
     });
 
@@ -36,12 +56,26 @@ define(function (require, exports, module) {
       var err;
 
       before(function () {
-        err = AuthErrors.toInvalidParameterError('param name', AuthErrors);
+        err = AuthErrors.toInvalidParameterError('paramName');
       });
 
       it('creates an INVALID_PARAMTER Error', function () {
         assert.isTrue(AuthErrors.is(err, 'INVALID_PARAMETER'));
-        assert.equal(err.param, 'param name');
+        assert.equal(err.param, 'paramName');
+      });
+
+      describe('getErrorPageUrl', function () {
+        var errPageUrl;
+
+        before(function () {
+          errPageUrl = err.getErrorPageUrl();
+        });
+
+        it('sends users to the 400 page', function () {
+          assert.include(errPageUrl, '400.html');
+          assert.include(errPageUrl, 'Invalid');
+          assert.include(errPageUrl, 'param=paramName');
+        });
       });
     });
 
@@ -49,15 +83,28 @@ define(function (require, exports, module) {
       var err;
 
       before(function () {
-        err = AuthErrors.toMissingParameterError('param name', AuthErrors);
+        err = AuthErrors.toMissingParameterError('paramName');
       });
 
       it('creates an MISSING_PARAMTER Error', function () {
         assert.isTrue(AuthErrors.is(err, 'MISSING_PARAMETER'));
-        assert.equal(err.param, 'param name');
+        assert.equal(err.param, 'paramName');
+      });
+
+      describe('getErrorPageUrl', function () {
+        var errPageUrl;
+
+        before(function () {
+          errPageUrl = err.getErrorPageUrl();
+        });
+
+        it('sends users to the 400 page', function () {
+          assert.include(errPageUrl, '400.html');
+          assert.include(errPageUrl, 'Missing');
+          assert.include(errPageUrl, 'param=paramName');
+        });
       });
     });
-
 
     describe('toMessage', function () {
       it('converts a code to a message', function () {

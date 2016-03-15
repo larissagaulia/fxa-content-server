@@ -8,6 +8,7 @@ define(function (require, exports, module) {
   'use strict';
 
   var _ = require('underscore');
+  var Constants = require('lib/constants');
   var Errors = require('lib/errors');
   var Strings = require('lib/strings');
 
@@ -15,12 +16,14 @@ define(function (require, exports, module) {
     return msg;
   };
 
+  var BAD_REQUEST_PAGE = Constants.BAD_REQUEST_PAGE;
   var UNEXPECTED_ERROR = t('Unexpected error');
 
   /*eslint-disable sorting/sort-object-props*/
   var ERRORS = {
     UNKNOWN_CLIENT: {
       errno: 101,
+      errorPageBaseUrl: BAD_REQUEST_PAGE,
       message: t('Unknown client')
     },
     INCORRECT_REDIRECT: {
@@ -49,6 +52,7 @@ define(function (require, exports, module) {
     },
     INVALID_PARAMETER: {
       errno: 109,
+      errorPageBaseUrl: BAD_REQUEST_PAGE,
       message: t('Invalid OAuth parameter: %(param)s')
     },
     INVALID_RESPONSE_TYPE: {
@@ -103,6 +107,7 @@ define(function (require, exports, module) {
     },
     MISSING_PARAMETER: {
       errno: 1005,
+      errorPageBaseUrl: BAD_REQUEST_PAGE,
       message: t('Missing OAuth parameter: %(param)s')
     }
   };

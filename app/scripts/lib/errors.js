@@ -6,7 +6,9 @@ define(function (require, exports, module) {
   'use strict';
 
   var _ = require('underscore');
+  var Constants = require('lib/constants');
   var Strings = require('lib/strings');
+  var Url = require('lib/url');
 
   module.exports = {
     /**
@@ -83,10 +85,10 @@ define(function (require, exports, module) {
      * Convert an error or a text type to a numeric code
      */
     toErrno: function (err) {
-      var errnoSource = this.find(err);
+      var errorConfig = this.find(err);
       // try to find an error with an errno.
-      if (errnoSource && errnoSource.errno) {
-        return errnoSource.errno;
+      if (errorConfig && errorConfig.errno) {
+        return errorConfig.errno;
       }
 
       // could not find an error with an errno, return the original.
@@ -117,15 +119,34 @@ define(function (require, exports, module) {
       }
 
       err.errno = errno;
+      err.errorModule = this;
+      err.errorPageBaseUrl = this.toErrorPageBaseUrl(errno);
+      err.getErrorPageUrl = getErrorPageUrl.bind(this, err);
       err.message = message;
       err.namespace = this.NAMESPACE;
-      err.errorModule = this;
 
       if (context) {
         err.context = context;
       }
 
       return err;
+    },
+
+    /**
+     * Get the base URL of the error's error page
+     *
+     * @param {String || Number || Object} type
+     * @returns {String}
+     */
+    toErrorPageBaseUrl: function (type) {
+      var errorConfig = this.find(type);
+      if (errorConfig && errorConfig.errorPageBaseUrl) {
+        return errorConfig.errorPageBaseUrl;
+      }
+
+      // Could not find a suitable error, or error had no errorPageBaseUrl
+      // defined. Fall back to the default.
+      return Constants.INTERNAL_ERROR_PAGE;
     },
 
     /**
@@ -193,5 +214,25 @@ define(function (require, exports, module) {
       return err;
     }
   };
+
+  /**
+   * Get the error page URL for an error
+   *
+   * @param {Error} error - error for which to get an error page URL.
+   * @param {object} translator - translator to use to interpolate the message
+   * @returns {string} url
+   */
+  function getErrorPageUrl (error, translator) {
+    var queryString = Url.objToSearchString({
+      client_id: error.client_id, //eslint-disable-line camelcase
+      context: error.context,
+      errno: error.errno,
+      message: this.toInterpolatedMessage(error, translator),
+      namespace: error.namespace,
+      param: error.param
+    });
+
+    return error.errorPageBaseUrl + queryString;
+  }
 });
 

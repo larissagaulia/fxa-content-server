@@ -37,6 +37,7 @@ function (Translator, Session) {
     '../tests/spec/lib/strings',
     '../tests/spec/lib/auth-errors',
     '../tests/spec/lib/oauth-errors',
+    '../tests/spec/lib/error-page-url',
     '../tests/spec/lib/profile-client',
     '../tests/spec/lib/app-start',
     '../tests/spec/lib/validate',

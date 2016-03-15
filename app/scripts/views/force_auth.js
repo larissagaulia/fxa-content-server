@@ -10,12 +10,15 @@ define(function (require, exports, module) {
   var AuthErrors = require('lib/auth-errors');
   var BaseView = require('views/base');
   var Cocktail = require('cocktail');
+  var getErrorPageUrl = require('lib/error-page-url');
   var FormView = require('views/form');
   var NullBehavior = require('views/behaviors/null');
   var p = require('lib/promise');
   var PasswordResetMixin = require('views/mixins/password-reset-mixin');
   var SignInView = require('views/sign_in');
   var Template = require('stache!templates/force_auth');
+  var Transform = require('lib/transform');
+  var Vat = require('lib/vat');
 
   function getFatalErrorMessage(self, fatalError) {
     if (fatalError) {
@@ -24,6 +27,11 @@ define(function (require, exports, module) {
 
     return '';
   }
+
+  var RELIER_DATA_SCHEMA = {
+    email: Vat.email().required(),
+    uid: Vat.uid().allow(null)
+  };
 
   var proto = SignInView.prototype;
 
@@ -38,12 +46,30 @@ define(function (require, exports, module) {
 
     _fatalError: null,
 
-    beforeRender: function () {
-      var self = this;
+    _getAndValidateAccountData: function () {
+      var fieldsToPick = ['email', 'uid'];
+      var accountData = {};
       var relier = this.relier;
 
-      if (! relier.has('email')) {
-        this._fatalError = AuthErrors.toError('FORCE_AUTH_EMAIL_REQUIRED');
+      fieldsToPick.forEach(function (fieldName) {
+        if (relier.has(fieldName)) {
+          accountData[fieldName] = relier.get(fieldName);
+        }
+      });
+
+      try {
+        return Transform.transformUsingSchema(
+            accountData, RELIER_DATA_SCHEMA, AuthErrors);
+      } catch (err) {
+        var errorPageUrl = getErrorPageUrl(err, this.translator);
+        this.window.location.href = errorPageUrl;
+      }
+    },
+
+    beforeRender: function () {
+      var self = this;
+      var accountData = this._getAndValidateAccountData();
+      if (! accountData) {
         return;
       }
 
@@ -56,11 +82,11 @@ define(function (require, exports, module) {
        * and do not allow the user to continue.
        */
       var account = this.user.initAccount({
-        email: relier.get('email'),
-        uid: relier.get('uid')
+        email: accountData.email,
+        uid: accountData.uid
       });
 
-      if (relier.has('uid')) {
+      if (accountData.uid) {
         return p.all([
           this.user.checkAccountEmailExists(account),
           this.user.checkAccountUidExists(account)

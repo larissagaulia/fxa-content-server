@@ -39,6 +39,7 @@ define(function (require, exports, module) {
   var FxFirstrunV2AuthenticationBroker = require('models/auth_brokers/fx-firstrun-v2');
   var FxiOSV1AuthenticationBroker = require('models/auth_brokers/fx-ios-v1');
   var FxiOSV2AuthenticationBroker = require('models/auth_brokers/fx-ios-v2');
+  var getErrorPageUrl = require('lib/error-page-url');
   var HeightObserver = require('lib/height-observer');
   var IframeAuthenticationBroker = require('models/auth_brokers/iframe');
   var IframeChannel = require('lib/channels/iframe');
@@ -48,7 +49,6 @@ define(function (require, exports, module) {
   var Notifier = require('lib/channels/notifier');
   var NullChannel = require('lib/channels/null');
   var OAuthClient = require('lib/oauth-client');
-  var OAuthErrors = require('lib/oauth-errors');
   var OAuthRelier = require('models/reliers/oauth');
   var OriginCheck = require('lib/origin-check');
   var p = require('lib/promise');
@@ -110,8 +110,8 @@ define(function (require, exports, module) {
           .delay(self.ERROR_REDIRECT_TIMEOUT_MS)
           .then(function () {
             //Something terrible happened. Let's bail.
-            var redirectTo = self._getErrorPage(error);
-            self._window.location.href = redirectTo;
+            var errorPageUrl = getErrorPageUrl(error, self._translator);
+            self._window.location.href = errorPageUrl;
           });
       });
     },
@@ -639,27 +639,6 @@ define(function (require, exports, module) {
       if (startPage) {
         this._router.navigate(startPage);
       }
-    },
-
-    _getErrorPage: function (err) {
-      if (AuthErrors.is(err, 'INVALID_PARAMETER') ||
-          AuthErrors.is(err, 'MISSING_PARAMETER') ||
-          OAuthErrors.is(err, 'INVALID_PARAMETER') ||
-          OAuthErrors.is(err, 'MISSING_PARAMETER') ||
-          OAuthErrors.is(err, 'UNKNOWN_CLIENT')) {
-        var queryString = Url.objToSearchString({
-          client_id: err.client_id, //eslint-disable-line camelcase
-          context: err.context,
-          errno: err.errno,
-          message: err.errorModule.toInterpolatedMessage(err, this._translator),
-          namespace: err.namespace,
-          param: err.param
-        });
-
-        return Constants.BAD_REQUEST_PAGE + queryString;
-      }
-
-      return Constants.INTERNAL_ERROR_PAGE;
     },
 
     _getStorageInstance: function () {

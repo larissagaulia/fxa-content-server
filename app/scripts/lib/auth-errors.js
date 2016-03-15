@@ -8,12 +8,15 @@ define(function (require, exports, module) {
   'use strict';
 
   var _ = require('underscore');
+  var Constants = require('lib/constants');
   var Errors = require('lib/errors');
+
 
   var t = function (msg) {
     return msg;
   };
 
+  var BAD_REQUEST_PAGE = Constants.BAD_REQUEST_PAGE;
   var UNEXPECTED_ERROR_MESSAGE = t('Unexpected error');
 
   /*eslint-disable sorting/sort-object-props*/
@@ -64,10 +67,12 @@ define(function (require, exports, module) {
     },
     INVALID_PARAMETER: {
       errno: 107,
+      errorPageBaseUrl: BAD_REQUEST_PAGE,
       message: t('Invalid parameter in request body: %(param)s')
     },
     MISSING_PARAMETER: {
       errno: 108,
+      errorPageBaseUrl: BAD_REQUEST_PAGE,
       message: t('Missing parameter in request body: %(param)s')
     },
     INVALID_REQUEST_SIGNATURE: {
@@ -204,10 +209,13 @@ define(function (require, exports, module) {
       errno: 1023,
       message: t('Valid email required')
     },
+    /*
+    Removed in issue #3040
     FORCE_AUTH_EMAIL_REQUIRED: {
       errno: 1024,
       message: t('/force_auth requires an email')
     },
+    */
     EXPIRED_VERIFICATION_LINK: {
       errno: 1025,
       message: t('The link you clicked to verify your email is expired.')
